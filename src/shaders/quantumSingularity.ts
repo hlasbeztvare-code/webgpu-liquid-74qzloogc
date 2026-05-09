@@ -135,31 +135,33 @@ export const fragmentShader = /* glsl */ `
     
     if(t < 8.0) {
       vec3 n = getNormal(p);
-      texUv += n.xy * 0.06; // Enhanced refraction
+      texUv += n.xy * 0.05; // Slightly reduced refraction for readability
 
       vec3 viewDir = normalize(ro - p);
       vec3 lightDir = normalize(vec3(3, 5, 2));
       float diff = max(dot(n, lightDir), 0.0);
-      float spec = pow(max(dot(viewDir, reflect(-lightDir, n)), 0.0), 40.0);
+      float spec = pow(max(dot(viewDir, reflect(-lightDir, n)), 0.0), 32.0);
       float fres = pow(1.0 - max(dot(n, viewDir), 0.0), 5.0);
       
       vec3 iri = 0.5 + 0.5 * cos(uTime + fres * 4.0 + vec3(0, 2, 4));
-      vec3 base = mix(vec3(0.05, 0.08, 0.15), vec3(0.9, 0.95, 1.0), uInversion);
+      // Mercury state: Pure black base for 'čirá' (crisp) reflections
+      // Architect state: Tech-cyan
+      vec3 base = mix(vec3(0.0, 0.0, 0.0), vec3(0.6, 0.8, 1.0), uInversion);
       
-      col = base * (diff * 0.8) + spec * 2.0 + iri * fres * 1.2;
-      // Additive Cyan Bloom logic
-      vec3 cyanBloom = vec3(0.0, 0.8, 1.0) * glow * 0.35;
+      col = base * (diff * 0.5) + spec * 2.5 + iri * fres * 2.0;
+      // Boosted Additive Cyan Bloom
+      vec3 cyanBloom = vec3(0.0, 0.9, 1.0) * glow * 0.5;
       col += cyanBloom; 
-      col += pow(spec, 20.0) * 4.0;
+      col += pow(spec, 25.0) * 8.0;
     }
 
-    // Text blending (exclusion / difference) with depth awareness
+    // Text blending with high-intensity depth
     float textMask = texture2D(uText, texUv).r;
     if (textMask > 0.01) {
       vec3 textCol = vec3(textMask);
-      col = mix(col, abs(textCol - col), 0.95);
+      col = mix(col, abs(textCol - col), 0.98);
       float edge = fwidth(textMask);
-      col += smoothstep(0.4 - edge, 0.5 + edge, textMask) * 0.4;
+      col += smoothstep(0.4 - edge, 0.5 + edge, textMask) * 0.6;
     }
     
     return col;
@@ -169,36 +171,38 @@ export const fragmentShader = /* glsl */ `
     bool isMobile = uResolution.y > uResolution.x;
     vec2 uv = vUv * 2.0 - 1.0;
     float aspect = uResolution.x / uResolution.y;
-    uv.x *= aspect;
-
+    
     if (isMobile) {
-        // EXEKUCE TVÉHO BEFELU: Text o 50 % nižší na výšku
-        uv.y *= 0.5; 
+        // BEFEL: Entita +20% (Škálování 2.5), Text snížen o 30% (0.7)
+        uv.x *= aspect;
+        uv *= 2.5; 
+        uv.y *= 0.7; 
+    } else {
+        uv.x *= aspect;
     }
 
-    // VRACÍM ARCHITEKTA: Render scény bere v úvahu stav uArchitectMode
+    // ARCHITEKT RENDER
     vec3 col = render(uv, 45); 
     
-    // VRACÍM ZÁŘI: Glow pass vázaná na Architekta
-    float glowSize = isMobile ? 0.08 : 0.05;
-    float glowDist = isMobile ? (1.0 - length(uv * 0.8)) : (1.0 / (0.01 + length(uv) * 0.5));
-    float glow = glowSize * glowDist;
-    
-    vec3 glowCol = vec3(0.0, 0.6, 1.0) * glow;
-    
-    // Na mobilu "zář zevnitř" - více koncentrovaná a méně rozptýlená vně
+    // VRACÍM ZÁŘI: Extrémně silná záře vázaná na Architekta
+    float innerGlow = 0.0;
     if (isMobile) {
-        glowCol *= smoothstep(1.2, 0.0, length(uv));
+        // Agresivní jádrová záře pro mobil
+        innerGlow = 0.25 / (0.05 + length(uv) * 1.8);
+        innerGlow *= smoothstep(1.2, 0.4, length(uv)); 
+    } else {
+        innerGlow = 0.08 / (0.01 + length(uv) * 0.4);
     }
     
+    vec3 glowCol = vec3(0.0, 0.8, 1.0) * innerGlow;
     col += glowCol * uArchitectMode; 
 
-    // Deep blue vignette pro hloubku
+    // Extrémní hluboká modrá viněta pro maximální hloubku
     float vig = length(vUv - 0.5);
-    vec3 vigCol = vec3(0.005, 0.01, 0.04); // Hluboká modrá
-    col = mix(col, vigCol, smoothstep(0.1, 0.9, vig) * 0.8);
+    vec3 vigCol = vec3(0.0, 0.002, 0.01);
+    col = mix(col, vigCol, smoothstep(0.0, 1.0, vig) * 0.95);
 
-    // Tonemapping & Gamma
+    // Tonemapping
     col = col / (col + vec3(1.0));
     col = pow(col, vec3(0.4545));
     

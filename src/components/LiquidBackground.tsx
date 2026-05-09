@@ -27,9 +27,9 @@ const ShaderMesh = ({ isArchitectMode }: ShaderMeshProps) => {
     ctx.fillStyle = 'white';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '200 280px "Inter", sans-serif';
+    ctx.font = '800 280px "Outfit", sans-serif';
     ctx.fillText('SOVEREIGN', canvas.width / 2, canvas.height / 2 - 140);
-    ctx.font = '200 280px "Inter", sans-serif';
+    ctx.font = '800 280px "Outfit", sans-serif';
     ctx.fillText('ARCHITECT', canvas.width / 2, canvas.height / 2 + 140);
     const tex = new THREE.CanvasTexture(canvas);
     tex.minFilter = THREE.LinearFilter;
