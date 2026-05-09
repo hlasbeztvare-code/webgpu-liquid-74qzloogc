@@ -162,9 +162,28 @@ export const fragmentShader = /* glsl */ `
   }
 
   void main() {
-    vec2 uv = vUv * 2.0 - 1.0;
-    uv.x *= uResolution.x / uResolution.y;
-    vec3 col = render(uv, 45);
+    // 1. Definujeme masterScale pro mobil (poloviční velikost, jak jsme domluvili)
+    float masterScale = 1.0;
+    if (uResolution.y > uResolution.x) {
+        masterScale = uResolution.y / uResolution.x * 0.22; 
+    }
+
+    // 2. KLÍČOVÝ FIX: Výpočet UV, který zabrání natahování do výšky
+    vec2 uv = vUv;
+    
+    // Vycentrování a aplikace aspect ratia bez deformace
+    float aspect = uResolution.x / uResolution.y;
+    uv = (uv - 0.5) * 2.0; // Rozsah -1.0 až 1.0
+    
+    // Tohle zajistí, že 1 jednotka na X je stejně dlouhá jako 1 jednotka na Y
+    uv.x *= aspect; 
+    
+    // Aplikujeme náš masterScale
+    uv *= masterScale;
+
+    // 3. Render scény s opraveným UV
+    vec3 col = render(uv, (uResolution.y > uResolution.x ? 28 : 45));
+    
     col *= 1.1 - length(vUv - 0.5) * 1.2; 
     col = col / (col + vec3(1.0));
     col = pow(col, vec3(0.4545));
