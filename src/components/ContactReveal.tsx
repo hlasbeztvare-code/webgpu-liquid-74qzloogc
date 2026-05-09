@@ -18,7 +18,7 @@ export const ContactReveal = ({ onReboot }: ContactRevealProps) => (
       className="flex flex-col items-center gap-6"
     >
       <h1 className="text-4xl md:text-6xl font-black tracking-[0.2em] text-white">JAN LANČARIČ</h1>
-      <a href="mailto:hlancaric@gmail.com" className="text-xl md:text-2xl tracking-[0.4em] text-white/40 hover:text-[#C5A27D] transition-colors duration-500">
+      <a href="mailto:hlancaric@gmail.com" className="text-xl md:text-2xl tracking-[0.4em] text-white/40 hover:text-white transition-colors duration-500">
         hlancaric@gmail.com
       </a>
     </motion.div>

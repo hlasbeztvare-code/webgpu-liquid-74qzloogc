@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: #050505;
-  color: #C5A27D;
+  color: #FFFFFF;
 }
 
 body {

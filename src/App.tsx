@@ -62,7 +62,7 @@ export default function App() {
   useIdleDetonate(detonate, isLoading || showContact || isDetonating);
 
   return (
-    <div className="relative w-full h-screen bg-black overflow-hidden font-mono text-[#C5A27D]">
+    <div className="relative w-full h-screen bg-black overflow-hidden font-sans text-white/90">
       <AnimatePresence>
         {isLoading && (
           <Preloader onComplete={() => {

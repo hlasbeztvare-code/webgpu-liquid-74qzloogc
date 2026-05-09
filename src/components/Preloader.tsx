@@ -37,15 +37,15 @@ export const Preloader = ({ onComplete }: PreloaderProps) => {
     <motion.div 
       exit={{ opacity: 0, scale: 1.5, filter: 'blur(20px)' }}
       transition={{ duration: 0.8 }}
-      className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-10 font-mono"
+      className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-10 font-sans"
     >
       <div className="w-full max-w-md flex flex-col gap-2 relative z-10">
         <motion.div 
           animate={{ opacity: [0.2, 1, 0.2] }}
           transition={{ repeat: Infinity, duration: 2 }}
-          className="text-[#C5A27D] text-[10px] mb-8 tracking-[1em] text-center"
+          className="text-white/60 text-[9px] mb-12 tracking-[1.2em] text-center uppercase"
         >
-          LUCKY PROTOCOL // LOADING
+          L-Code // Initializing
         </motion.div>
         
         {steps.map((step, i) => (
@@ -57,7 +57,7 @@ export const Preloader = ({ onComplete }: PreloaderProps) => {
           >
             <span className="text-[10px] text-white/20">0{i+1}</span>
             <span className="text-[11px] text-white/80 tracking-widest">{step}</span>
-            <div className="ml-auto w-1 h-1 bg-[#C5A27D] rounded-full animate-pulse" />
+            <div className="ml-auto w-1 h-1 bg-white/40 rounded-full animate-pulse" />
           </motion.div>
         ))}
 
@@ -67,7 +67,7 @@ export const Preloader = ({ onComplete }: PreloaderProps) => {
               initial={{ x: '-100%' }}
               animate={{ x: '0%' }}
               transition={{ duration: 7, ease: 'linear' }}
-              className="absolute inset-0 bg-[#C5A27D]"
+              className="absolute inset-0 bg-white/40"
             />
           </div>
           <span className="text-[10px] text-white/40 tabular-nums">SCANNING...</span>

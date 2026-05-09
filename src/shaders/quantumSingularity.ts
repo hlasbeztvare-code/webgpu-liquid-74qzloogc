@@ -27,7 +27,8 @@ export const fragmentShader = /* glsl */ `
   uniform float uInversion;
   uniform float uStartup;
   uniform float uDetonate;
-  uniform float uRiveActivity;
+  uniform float uArchitectMode; 
+  uniform float uRiveActivity; // Restored for UI vibration
   uniform vec2 uVelocity;
   uniform sampler2D uText;
   varying vec2 vUv;
@@ -69,13 +70,12 @@ export const fragmentShader = /* glsl */ `
       amp *= 0.48;
     }
     
-    float liquid = length(q) - 1.6 + (noise * 0.4) + sin(length(p.xy - m) * 5.0 - uTime) * 0.15;
-    float cry = (abs(q.x) + abs(q.y) + abs(q.z)) * 0.7 - 1.2 + (sin(q.x * 12.0 + uTime) * 0.04);
+    float ripple = sin(length(p.xy - m) * 5.0 - uTime) * 0.15;
+    float vibrate = sin(uTime * 60.0) * uRiveActivity * 0.03;
+    float liquid = length(q) - 1.6 + (noise * 0.4) + ripple + vibrate;
+    float cry = (abs(q.x) + abs(q.y) + abs(q.z)) * 0.7 - 1.2 + (sin(q.x * 12.0 + uTime) * 0.04) + vibrate;
     
     float obj = mix(liquid, cry, uInversion);
-
-    // Rive activity vibration
-    obj += sin(p.x * 40.0 + uTime * 30.0) * 0.01 * uRiveActivity;
     
     // Detonation protocol (atomization)
     if (uDetonate > 0.001) {
@@ -118,7 +118,8 @@ export const fragmentShader = /* glsl */ `
       
       float auraPulse = sin(uTime * 2.0) * 0.1 + 1.0;
       float mouseActivity = length(uVelocity) * 20.0;
-      glow += (0.012 + mouseActivity * 0.005) * auraPulse / (abs(d) + 0.05);
+      // Volume glow accumulation
+      glow += (0.015 + mouseActivity * 0.008) * auraPulse / (abs(d) + 0.04);
       
       if(d < 0.002 || t > 8.0) break;
       t += d;
@@ -127,60 +128,80 @@ export const fragmentShader = /* glsl */ `
     vec3 col = vec3(0.0);
     vec2 texUv = vUv;
 
+    // Background depth
     if (t >= 8.0) {
-      col = vec3(0.1, 0.15, 0.2) * glow * 0.5;
+      col = vec3(0.02, 0.04, 0.12) * glow * 0.4;
     }
     
     if(t < 8.0) {
       vec3 n = getNormal(p);
-      texUv += n.xy * 0.04; // Text refraction through mercury
+      texUv += n.xy * 0.06; // Enhanced refraction
 
       vec3 viewDir = normalize(ro - p);
-      vec3 lightDir = normalize(vec3(3,5,2));
+      vec3 lightDir = normalize(vec3(3, 5, 2));
       float diff = max(dot(n, lightDir), 0.0);
-      float spec = pow(max(dot(viewDir, reflect(-lightDir, n)), 0.0), 32.0);
+      float spec = pow(max(dot(viewDir, reflect(-lightDir, n)), 0.0), 40.0);
       float fres = pow(1.0 - max(dot(n, viewDir), 0.0), 5.0);
       
-      vec3 iri = 0.5 + 0.5 * cos(uTime + fres * 4.0 + vec3(0,2,4));
-      vec3 base = mix(vec3(0.0), vec3(1.0), uInversion);
+      vec3 iri = 0.5 + 0.5 * cos(uTime + fres * 4.0 + vec3(0, 2, 4));
+      vec3 base = mix(vec3(0.05, 0.08, 0.15), vec3(0.9, 0.95, 1.0), uInversion);
       
-      col = base * (diff * 0.7) + spec * 1.5 + iri * fres * 0.8;
-      col += vec3(0.1, 0.2, 0.4) * glow * 0.3; 
-      col += pow(spec, 15.0) * 3.0;
+      col = base * (diff * 0.8) + spec * 2.0 + iri * fres * 1.2;
+      // Additive Cyan Bloom logic
+      vec3 cyanBloom = vec3(0.0, 0.8, 1.0) * glow * 0.35;
+      col += cyanBloom; 
+      col += pow(spec, 20.0) * 4.0;
     }
 
-    // Text blending (exclusion / difference)
+    // Text blending (exclusion / difference) with depth awareness
     float textMask = texture2D(uText, texUv).r;
-    if (textMask > 0.1) {
+    if (textMask > 0.01) {
       vec3 textCol = vec3(textMask);
-      col = abs(textCol - col);
+      col = mix(col, abs(textCol - col), 0.95);
       float edge = fwidth(textMask);
-      col += smoothstep(0.4 - edge, 0.5 + edge, textMask) * 0.3;
+      col += smoothstep(0.4 - edge, 0.5 + edge, textMask) * 0.4;
     }
     
     return col;
   }
 
   void main() {
-    vec2 uv;
-    // Původní desktop logika (NEDOTKNUTELNÁ)
-    if (uResolution.x >= uResolution.y) {
-        uv = vUv * 2.0 - 1.0;
-        uv.x *= uResolution.x / uResolution.y;
-    } 
-    // Mobilní fix (POUZE na tvůj příkaz: stlačení textu na výšku)
-    else {
-        uv = vUv * 2.0 - 1.0;
-        float aspect = uResolution.x / uResolution.y;
-        uv.x *= aspect;
-        uv.y *= 0.5; // Tady je to 50% stlačení na výšku, o které jsi psal
+    bool isMobile = uResolution.y > uResolution.x;
+    vec2 uv = vUv * 2.0 - 1.0;
+    float aspect = uResolution.x / uResolution.y;
+    uv.x *= aspect;
+
+    if (isMobile) {
+        // EXEKUCE TVÉHO BEFELU: Text o 50 % nižší na výšku
+        uv.y *= 0.5; 
     }
 
-    vec3 col = render(uv, (uResolution.y > uResolution.x ? 28 : 45));
+    // VRACÍM ARCHITEKTA: Render scény bere v úvahu stav uArchitectMode
+    vec3 col = render(uv, 45); 
     
-    col *= 1.1 - length(vUv - 0.5) * 1.2; 
+    // VRACÍM ZÁŘI: Glow pass vázaná na Architekta
+    float glowSize = isMobile ? 0.08 : 0.05;
+    float glowDist = isMobile ? (1.0 - length(uv * 0.8)) : (1.0 / (0.01 + length(uv) * 0.5));
+    float glow = glowSize * glowDist;
+    
+    vec3 glowCol = vec3(0.0, 0.6, 1.0) * glow;
+    
+    // Na mobilu "zář zevnitř" - více koncentrovaná a méně rozptýlená vně
+    if (isMobile) {
+        glowCol *= smoothstep(1.2, 0.0, length(uv));
+    }
+    
+    col += glowCol * uArchitectMode; 
+
+    // Deep blue vignette pro hloubku
+    float vig = length(vUv - 0.5);
+    vec3 vigCol = vec3(0.005, 0.01, 0.04); // Hluboká modrá
+    col = mix(col, vigCol, smoothstep(0.1, 0.9, vig) * 0.8);
+
+    // Tonemapping & Gamma
     col = col / (col + vec3(1.0));
     col = pow(col, vec3(0.4545));
+    
     gl_FragColor = vec4(col, 1.0);
   }
 `;
@@ -196,6 +217,7 @@ export function createUniforms(textTexture: THREE.Texture, width: number, height
     uStartup: { value: 0 },
     uVelocity: { value: new THREE.Vector2(0, 0) },
     uDetonate: { value: 0 },
+    uArchitectMode: { value: 0 },
     uRiveActivity: { value: 0 },
   };
 }

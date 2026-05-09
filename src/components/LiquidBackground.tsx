@@ -27,9 +27,9 @@ const ShaderMesh = ({ isArchitectMode }: ShaderMeshProps) => {
     ctx.fillStyle = 'white';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '900 280px "JetBrains Mono", monospace';
+    ctx.font = '200 280px "Inter", sans-serif';
     ctx.fillText('SOVEREIGN', canvas.width / 2, canvas.height / 2 - 140);
-    ctx.font = '900 280px "JetBrains Mono", monospace';
+    ctx.font = '200 280px "Inter", sans-serif';
     ctx.fillText('ARCHITECT', canvas.width / 2, canvas.height / 2 + 140);
     const tex = new THREE.CanvasTexture(canvas);
     tex.minFilter = THREE.LinearFilter;
@@ -45,6 +45,7 @@ const ShaderMesh = ({ isArchitectMode }: ShaderMeshProps) => {
     uStartup: { value: 0 },
     uVelocity: { value: new THREE.Vector2(0, 0) },
     uDetonate: { value: 0 },
+    uArchitectMode: { value: 0 },
     uRiveActivity: { value: 0 }
   }), [textTexture]);
 
@@ -69,6 +70,7 @@ const ShaderMesh = ({ isArchitectMode }: ShaderMeshProps) => {
       m.uniforms.uMouse.value.copy(mousePos.current);
       m.uniforms.uResolution.value.set(size.width, size.height);
       m.uniforms.uInversion.value = THREE.MathUtils.lerp(m.uniforms.uInversion.value, isArchitectMode ? 1.0 : 0.0, 0.04);
+      m.uniforms.uArchitectMode.value = THREE.MathUtils.lerp(m.uniforms.uArchitectMode.value, isArchitectMode ? 1.0 : 0.0, 0.04);
       m.uniforms.uDetonate.value = THREE.MathUtils.lerp(m.uniforms.uDetonate.value, velocityBridge.isDetonating ? 1.0 : 0.0, 0.08);
       m.uniforms.uRiveActivity.value = velocityBridge.riveActivity;
     }
