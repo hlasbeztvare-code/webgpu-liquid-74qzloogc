@@ -13,7 +13,7 @@ export const SovereignRive = ({ isArchitectMode, isDetonating, fullScreen = fals
   const { rive, RiveComponent } = useRive({
     src: '/sovereign.riv',
     stateMachines: 'Sovereign_Core',
-    layout: new Layout({ fit: Fit.Cover, alignment: Alignment.Center }),
+    layout: new Layout({ fit: Fit.Contain, alignment: Alignment.TopLeft }),
     autoplay: true,
   });
 
@@ -51,6 +51,11 @@ export const SovereignRive = ({ isArchitectMode, isDetonating, fullScreen = fals
       if (uVel) uVel.value = velocityBridge.velocity * 150;
       if (mouseX) mouseX.value = mouseRef.current.x;
       if (mouseY) mouseY.value = mouseRef.current.y;
+
+      // BYPASS: Posíláme Rive aktivitu do shaderu (LiquidBackground)
+      // Když se hýbe Rive, shader musí vibrovat
+      velocityBridge.riveActivity = Math.sin(t * 2) * 0.5 + 0.5;
+
       frameRef.current = requestAnimationFrame(tick);
     };
     frameRef.current = requestAnimationFrame(tick);
@@ -81,7 +86,7 @@ export const SovereignRive = ({ isArchitectMode, isDetonating, fullScreen = fals
     return (
       <div
         className="fixed inset-0 z-10 pointer-events-none"
-        style={{ mixBlendMode: 'screen' }}
+        style={{ mixBlendMode: 'exclusion' }}
       >
         <RiveComponent className="w-full h-full" />
       </div>

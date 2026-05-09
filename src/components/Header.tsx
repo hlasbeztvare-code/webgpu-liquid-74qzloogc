@@ -20,8 +20,9 @@ export const Header = ({
     transition={{ delay: 0.2, duration: 0.8 }}
     className="fixed top-0 left-0 w-full p-10 flex justify-between items-center z-50"
   >
-    <div className="w-40 h-20">
-      <SovereignLogo className="h-full w-auto" isArchitectMode={isArchitectMode} />
+    <div className="w-40 h-20 opacity-50">
+      {/* Tady už logo nebude, protože ho renderuje SovereignRive přes celou obrazovku */}
+      <span className="text-[10px] tracking-[0.5em]">L-CODE // DYNAMICS</span>
     </div>
     
     <div className="flex items-center gap-10">

@@ -44,7 +44,8 @@ const ShaderMesh = ({ isArchitectMode }: ShaderMeshProps) => {
     uText: { value: textTexture },
     uStartup: { value: 0 },
     uVelocity: { value: new THREE.Vector2(0, 0) },
-    uDetonate: { value: 0 }
+    uDetonate: { value: 0 },
+    uRiveActivity: { value: 0 }
   }), [textTexture]);
 
   useFrame((state) => {
@@ -69,6 +70,7 @@ const ShaderMesh = ({ isArchitectMode }: ShaderMeshProps) => {
       m.uniforms.uResolution.value.set(size.width, size.height);
       m.uniforms.uInversion.value = THREE.MathUtils.lerp(m.uniforms.uInversion.value, isArchitectMode ? 1.0 : 0.0, 0.04);
       m.uniforms.uDetonate.value = THREE.MathUtils.lerp(m.uniforms.uDetonate.value, velocityBridge.isDetonating ? 1.0 : 0.0, 0.08);
+      m.uniforms.uRiveActivity.value = velocityBridge.riveActivity;
     }
   });
 

@@ -27,6 +27,7 @@ export const fragmentShader = /* glsl */ `
   uniform float uInversion;
   uniform float uStartup;
   uniform float uDetonate;
+  uniform float uRiveActivity;
   uniform vec2 uVelocity;
   uniform sampler2D uText;
   varying vec2 vUv;
@@ -72,6 +73,9 @@ export const fragmentShader = /* glsl */ `
     float cry = (abs(q.x) + abs(q.y) + abs(q.z)) * 0.7 - 1.2 + (sin(q.x * 12.0 + uTime) * 0.04);
     
     float obj = mix(liquid, cry, uInversion);
+
+    // Rive activity vibration
+    obj += sin(p.x * 40.0 + uTime * 30.0) * 0.01 * uRiveActivity;
     
     // Detonation protocol (atomization)
     if (uDetonate > 0.001) {
@@ -179,5 +183,6 @@ export function createUniforms(textTexture: THREE.Texture, width: number, height
     uStartup: { value: 0 },
     uVelocity: { value: new THREE.Vector2(0, 0) },
     uDetonate: { value: 0 },
+    uRiveActivity: { value: 0 },
   };
 }
