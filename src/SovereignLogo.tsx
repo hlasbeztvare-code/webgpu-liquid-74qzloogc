@@ -1,4 +1,3 @@
-import React from 'react';
 const SovereignLogo = ({ className = '', isArchitectMode = false }) => {
   const goldColor = "#C5A27D";
   const platinumColor = "#FFFFFF";
