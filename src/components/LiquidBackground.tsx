@@ -96,9 +96,13 @@ export const LiquidBackground = ({ isArchitectMode }: LiquidBackgroundProps) => 
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
     transition={{ duration: 2 }}
-    className="fixed inset-0"
+    className="fixed inset-0 flex items-center justify-center pointer-events-none"
   >
-    <Canvas gl={{ antialias: false }} dpr={[1, 1.5]}>
+    <Canvas 
+      gl={{ antialias: false }} 
+      dpr={[1, 1.5]}
+      className="w-full h-full"
+    >
       <ShaderMesh isArchitectMode={isArchitectMode} />
     </Canvas>
   </motion.div>

@@ -162,26 +162,21 @@ export const fragmentShader = /* glsl */ `
   }
 
   void main() {
-    // 1. Definujeme masterScale pro mobil (poloviční velikost, jak jsme domluvili)
-    float masterScale = 1.0;
-    if (uResolution.y > uResolution.x) {
-        masterScale = uResolution.y / uResolution.x * 0.22; 
-    }
-
-    // 2. KLÍČOVÝ FIX: Výpočet UV, který zabrání natahování do výšky
-    vec2 uv = vUv;
+    // 1. Master Scale: 0.22 pro mobil (poloviční velikost), 1.0 pro desktop
+    float masterScale = (uResolution.y > uResolution.x) ? 0.22 : 1.0;
     
-    // Vycentrování a aplikace aspect ratia bez deformace
+    // 2. Centrování a Aspect Ratio Fix
+    // Musíme použít přesný střed (0.5) a přepočítat UV podle šířky/výšky
+    vec2 uv = vUv - 0.5;
     float aspect = uResolution.x / uResolution.y;
-    uv = (uv - 0.5) * 2.0; // Rozsah -1.0 až 1.0
     
-    // Tohle zajistí, že 1 jednotka na X je stejně dlouhá jako 1 jednotka na Y
+    // Tohle zajistí, že nápis nebude natažený nahoru
     uv.x *= aspect; 
     
-    // Aplikujeme náš masterScale
-    uv *= masterScale;
-
-    // 3. Render scény s opraveným UV
+    // Aplikujeme měřítko
+    uv /= masterScale; 
+    
+    // Vrátíme zpět do rozsahu renderu
     vec3 col = render(uv, (uResolution.y > uResolution.x ? 28 : 45));
     
     col *= 1.1 - length(vUv - 0.5) * 1.2; 
