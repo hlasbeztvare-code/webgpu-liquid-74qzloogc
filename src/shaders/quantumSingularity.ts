@@ -103,8 +103,8 @@ export const fragmentShader = /* glsl */ `
     ));
   }
 
-  // Variable raymarching: allows fewer steps for secondary samples
-  vec3 render(vec2 uv, int steps) {
+  // Variable raymarching: returns vec4(col, mask)
+  vec4 render(vec2 uv, int steps) {
     vec3 ro = vec3(0.0, 0.0, 3.5);
     vec3 rd = normalize(vec3(uv, -1.2));
     
@@ -117,54 +117,62 @@ export const fragmentShader = /* glsl */ `
       float d = map(p);
       
       float auraPulse = sin(uTime * 2.0) * 0.1 + 1.0;
-      float mouseActivity = length(uVelocity) * 20.0;
+      float mouseActivity = length(uVelocity) * 25.0;
       // Volume glow accumulation
-      glow += (0.015 + mouseActivity * 0.008) * auraPulse / (abs(d) + 0.04);
+      glow += (0.012 + mouseActivity * 0.01) * auraPulse / (abs(d) + 0.035);
       
-      if(d < 0.002 || t > 8.0) break;
+      if(d < 0.0015 || t > 8.0) break;
       t += d;
     }
     
     vec3 col = vec3(0.0);
+    float mask = 0.0;
     vec2 texUv = vUv;
 
     // Background depth
     if (t >= 8.0) {
-      col = vec3(0.02, 0.04, 0.12) * glow * 0.4;
+      col = vec3(0.01, 0.02, 0.08) * glow * 0.3;
     }
     
     if(t < 8.0) {
+      mask = 1.0;
       vec3 n = getNormal(p);
-      texUv += n.xy * 0.05; // Slightly reduced refraction for readability
+      texUv += n.xy * 0.045; 
 
       vec3 viewDir = normalize(ro - p);
-      vec3 lightDir = normalize(vec3(3, 5, 2));
+      vec3 lightDir = normalize(vec3(5, 10, 5));
       float diff = max(dot(n, lightDir), 0.0);
-      float spec = pow(max(dot(viewDir, reflect(-lightDir, n)), 0.0), 32.0);
-      float fres = pow(1.0 - max(dot(n, viewDir), 0.0), 5.0);
+      float spec = pow(max(dot(viewDir, reflect(-lightDir, n)), 0.0), 64.0);
+      float fres = pow(1.0 - max(dot(n, viewDir), 0.0), 4.0);
       
-      vec3 iri = 0.5 + 0.5 * cos(uTime + fres * 4.0 + vec3(0, 2, 4));
-      // Mercury state: Pure black base for 'čirá' (crisp) reflections
-      // Architect state: Tech-cyan
-      vec3 base = mix(vec3(0.0, 0.0, 0.0), vec3(0.6, 0.8, 1.0), uInversion);
+      vec3 iri = 0.5 + 0.5 * cos(uTime + fres * 3.0 + vec3(0, 2, 4));
       
-      col = base * (diff * 0.5) + spec * 2.5 + iri * fres * 2.0;
-      // Boosted Additive Cyan Bloom
-      vec3 cyanBloom = vec3(0.0, 0.9, 1.0) * glow * 0.5;
+      // MERCURY: Absolute clear/crisp (Zero base, high spec/fres)
+      // ARCHITECT: Core blue
+      vec3 base = mix(vec3(0.0), vec3(0.3, 0.7, 1.0), uInversion);
+      
+      // Metallic reflection logic
+      vec3 reflectDir = reflect(-viewDir, n);
+      float shiny = pow(max(0.0, dot(reflectDir, vec3(0,1,0))), 8.0) * 2.0;
+      
+      col = base * (diff * 0.4) + spec * 5.0 + iri * fres * 3.0 + shiny;
+      
+      // Additive Cyan Bloom (Architect Mode Only)
+      vec3 cyanBloom = vec3(0.0, 0.9, 1.0) * glow * 0.6 * uArchitectMode;
       col += cyanBloom; 
-      col += pow(spec, 25.0) * 8.0;
+      col += pow(spec, 16.0) * 12.0;
     }
 
     // Text blending with high-intensity depth
     float textMask = texture2D(uText, texUv).r;
     if (textMask > 0.01) {
       vec3 textCol = vec3(textMask);
-      col = mix(col, abs(textCol - col), 0.98);
+      col = mix(col, abs(textCol - col), 0.99);
       float edge = fwidth(textMask);
-      col += smoothstep(0.4 - edge, 0.5 + edge, textMask) * 0.6;
+      col += smoothstep(0.4 - edge, 0.5 + edge, textMask) * 0.8;
     }
     
-    return col;
+    return vec4(col, mask);
   }
 
   void main() {
@@ -182,25 +190,27 @@ export const fragmentShader = /* glsl */ `
     }
 
     // ARCHITEKT RENDER
-    vec3 col = render(uv, 45); 
+    vec4 result = render(uv, 45); 
+    vec3 col = result.rgb;
+    float mask = result.a;
     
-    // VRACÍM ZÁŘI: Extrémně silná záře vázaná na Architekta
+    // VNITŘNÍ ZÁŘE: Agresivní luminiscence vázaná na masku objektu
     float innerGlow = 0.0;
     if (isMobile) {
-        // Agresivní jádrová záře pro mobil
-        innerGlow = 0.25 / (0.05 + length(uv) * 1.8);
-        innerGlow *= smoothstep(1.2, 0.4, length(uv)); 
+        // Mobile internal glow focused on the core
+        innerGlow = 0.5 / (0.1 + length(uv) * 2.0);
+        innerGlow *= mask; // Masking to keep it "internal"
     } else {
-        innerGlow = 0.08 / (0.01 + length(uv) * 0.4);
+        innerGlow = 0.1 / (0.02 + length(uv) * 0.5);
     }
     
     vec3 glowCol = vec3(0.0, 0.8, 1.0) * innerGlow;
     col += glowCol * uArchitectMode; 
 
-    // Extrémní hluboká modrá viněta pro maximální hloubku
+    // Maximální hloubka: Černo-modrá propast
     float vig = length(vUv - 0.5);
-    vec3 vigCol = vec3(0.0, 0.002, 0.01);
-    col = mix(col, vigCol, smoothstep(0.0, 1.0, vig) * 0.95);
+    vec3 vigCol = vec4(vec3(0.0, 0.005, 0.02) * (1.0 - uArchitectMode), 1.0).rgb;
+    col = mix(col, vigCol, smoothstep(0.1, 1.1, vig) * 0.98);
 
     // Tonemapping
     col = col / (col + vec3(1.0));
