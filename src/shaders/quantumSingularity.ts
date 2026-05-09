@@ -162,21 +162,20 @@ export const fragmentShader = /* glsl */ `
   }
 
   void main() {
-    // 1. Master Scale: 0.22 pro mobil (poloviční velikost), 1.0 pro desktop
-    float masterScale = (uResolution.y > uResolution.x) ? 0.22 : 1.0;
-    
-    // 2. Centrování a Aspect Ratio Fix
-    // Musíme použít přesný střed (0.5) a přepočítat UV podle šířky/výšky
-    vec2 uv = vUv - 0.5;
-    float aspect = uResolution.x / uResolution.y;
-    
-    // Tohle zajistí, že nápis nebude natažený nahoru
-    uv.x *= aspect; 
-    
-    // Aplikujeme měřítko
-    uv /= masterScale; 
-    
-    // Vrátíme zpět do rozsahu renderu
+    vec2 uv;
+    // Původní desktop logika (NEDOTKNUTELNÁ)
+    if (uResolution.x >= uResolution.y) {
+        uv = vUv * 2.0 - 1.0;
+        uv.x *= uResolution.x / uResolution.y;
+    } 
+    // Mobilní fix (POUZE na tvůj příkaz: stlačení textu na výšku)
+    else {
+        uv = vUv * 2.0 - 1.0;
+        float aspect = uResolution.x / uResolution.y;
+        uv.x *= aspect;
+        uv.y *= 0.5; // Tady je to 50% stlačení na výšku, o které jsi psal
+    }
+
     vec3 col = render(uv, (uResolution.y > uResolution.x ? 28 : 45));
     
     col *= 1.1 - length(vUv - 0.5) * 1.2; 
