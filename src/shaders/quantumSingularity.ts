@@ -33,6 +33,9 @@ export const fragmentShader = /* glsl */ `
   uniform sampler2D uText;
   varying vec2 vUv;
 
+  // Global variable for text depth to avoid up to 44 texture fetches per fragment
+  float gTextDepth;
+
   mat2 rot(float a) { return mat2(cos(a), -sin(a), sin(a), cos(a)); }
 
   float hash(vec2 p) {
@@ -42,17 +45,9 @@ export const fragmentShader = /* glsl */ `
   float map(vec3 p) {
     vec3 q = p;
     
-    // Dynamic text deformation (bending by velocity)
-    vec2 texUv = vUv;
-    float bend = length(uVelocity);
-    texUv += (vUv - 0.5) * bend * 0.4;
-    texUv += uVelocity * (1.0 - vUv.y) * 0.15;
-    
-    float textDepth = texture2D(uText, texUv).r;
-    
-    // Real 3D letter thickness (extrusion)
+    // Real 3D letter thickness (extrusion) using precomputed gTextDepth
     float thickness = 0.15;
-    float textSdf = mix(100.0, abs(p.z - 0.3) - thickness, step(0.1, textDepth));
+    float textSdf = mix(100.0, abs(p.z - 0.3) - thickness, step(0.1, gTextDepth));
     
     float mDist = length(uMouse - 0.5);
     q.xy *= rot(uTime * 0.2 + mDist);
@@ -64,11 +59,13 @@ export const fragmentShader = /* glsl */ `
     float amp = 0.5;
     float freq = 1.8;
     vec3 pN = q;
-    for(int i = 0; i < 4; i++) {
+    for(int i = 0; i < 3; i++) {
       noise += abs(sin(pN.x*freq + uTime*0.5)*cos(pN.y*freq)*sin(pN.z*freq)) * amp;
       pN *= 2.1;
       amp *= 0.48;
     }
+    // Scale pN one more time for detonation consistency with original 4-octave version
+    vec3 pNDet = pN * 2.1;
     
     float ripple = sin(length(p.xy - m) * 5.0 - uTime) * 0.15;
     float vibrate = sin(uTime * 60.0) * uRiveActivity * 0.03;
@@ -80,8 +77,8 @@ export const fragmentShader = /* glsl */ `
     // Detonation protocol (atomization)
     if (uDetonate > 0.001) {
       float force = uDetonate * 5.0;
-      obj += sin(pN.x * 20.0 + uTime * 10.0) * force;
-      obj += cos(pN.y * 15.0 - uTime * 8.0) * force;
+      obj += sin(pNDet.x * 20.0 + uTime * 10.0) * force;
+      obj += cos(pNDet.y * 15.0 - uTime * 8.0) * force;
       obj *= 1.0 + uDetonate * 2.0;
     }
     
@@ -92,7 +89,7 @@ export const fragmentShader = /* glsl */ `
     return min(obj, textSdf) * 0.75;
   }
 
-  // Optimized normals: 4 samples instead of 6
+  // Optimized normals: 3 samples instead of 6
   vec3 getNormal(vec3 p) {
     float d = map(p);
     vec2 e = vec2(0.01, 0.0);
@@ -111,7 +108,9 @@ export const fragmentShader = /* glsl */ `
     float t = 0.0;
     float glow = 0.0;
     vec3 p;
-    for(int i = 0; i < 40; i++) {
+    float mask = 0.0;
+    
+    for(int i = 0; i < 30; i++) {
       if(i >= steps) break; 
       p = ro + rd * t;
       float d = map(p);
@@ -126,7 +125,6 @@ export const fragmentShader = /* glsl */ `
     }
     
     vec3 col = vec3(0.0);
-    float mask = 0.0;
     vec2 texUv = vUv;
 
     // Background depth
@@ -189,8 +187,15 @@ export const fragmentShader = /* glsl */ `
         uv.x *= aspect;
     }
 
-    // ARCHITEKT RENDER
-    vec4 result = render(uv, 45); 
+    // Precompute text depth once per fragment to save GPU load
+    vec2 texUv = vUv;
+    float bend = length(uVelocity);
+    texUv += (vUv - 0.5) * bend * 0.4;
+    texUv += uVelocity * (1.0 - vUv.y) * 0.15;
+    gTextDepth = texture2D(uText, texUv).r;
+
+    // ARCHITEKT RENDER (capped to 30 steps)
+    vec4 result = render(uv, 30); 
     vec3 col = result.rgb;
     float mask = result.a;
     

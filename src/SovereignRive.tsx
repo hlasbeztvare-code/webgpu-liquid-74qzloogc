@@ -86,7 +86,13 @@ export const SovereignRive = ({ isArchitectMode, isDetonating, fullScreen = fals
     return (
       <div
         className="fixed inset-0 z-10 pointer-events-none"
-        style={{ mixBlendMode: 'exclusion' }}
+        // "Čirý jako voda" – Overlay nebo Soft-light propustí barvu pozadí skrz
+        // a použije pouze světlo a stíny z Jindřicha k "ohnutí" obrazu pod ním (jako sklo/voda).
+        style={{ 
+          mixBlendMode: 'overlay', 
+          opacity: 0.85,
+          filter: 'contrast(1.2)' 
+        }}
       >
         <RiveComponent className="w-full h-full" />
       </div>

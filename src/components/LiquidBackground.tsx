@@ -100,7 +100,7 @@ export const LiquidBackground = ({ isArchitectMode }: LiquidBackgroundProps) => 
     transition={{ duration: 2 }}
     className="fixed inset-0"
   >
-    <Canvas gl={{ antialias: false }} dpr={[1, 1.5]}>
+    <Canvas gl={{ antialias: false }} dpr={1}>
       <ShaderMesh isArchitectMode={isArchitectMode} />
     </Canvas>
   </motion.div>
